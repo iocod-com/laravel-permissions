@@ -2,3 +2,6 @@ vendor/
 .DS_Store
 .phpunit.result.cache
 composer.lock
+vendor/
+build/
+.rector_cache/

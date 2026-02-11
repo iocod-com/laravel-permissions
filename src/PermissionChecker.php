@@ -2,24 +2,21 @@
 
 namespace Iocod\LaravelPermissions;
 
-use Iocod\LaravelPermissions\Repositories\PermissionRepository;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Iocod\LaravelPermissions\Repositories\PermissionRepository;
 
 class PermissionChecker
 {
-    protected PermissionRepository $repository;
-
     protected bool $cacheEnabled;
 
     protected int $cacheTtl;
 
     protected string $cachePrefix;
 
-    public function __construct(PermissionRepository $repository)
+    public function __construct(protected PermissionRepository $repository)
     {
-        $this->repository = $repository;
         $cacheEnabled = config('permissions.cache.enabled', true);
         $this->cacheEnabled = is_bool($cacheEnabled) ? $cacheEnabled : true;
 
@@ -80,9 +77,7 @@ class PermissionChecker
         $cacheKey = $this->getCacheKey($user, 'permissions');
 
         /** @var Collection<int, string> */
-        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($user): Collection {
-            return $this->loadUserPermissions($user);
-        });
+        return Cache::remember($cacheKey, $this->cacheTtl, fn (): Collection => $this->loadUserPermissions($user));
     }
 
     /**
@@ -96,7 +91,7 @@ class PermissionChecker
             $userId = $user->getAuthIdentifier();
             $id = (is_int($userId) || is_string($userId)) ? $userId : '0';
 
-            return $this->repository->getUserRoleNames($id, get_class($user));
+            return $this->repository->getUserRoleNames($id, $user::class);
         }
 
         $cacheKey = $this->getCacheKey($user, 'roles');
@@ -106,7 +101,7 @@ class PermissionChecker
             $userId = $user->getAuthIdentifier();
             $id = (is_int($userId) || is_string($userId)) ? $userId : '0';
 
-            return $this->repository->getUserRoleNames($id, get_class($user));
+            return $this->repository->getUserRoleNames($id, $user::class);
         });
     }
 
@@ -199,7 +194,7 @@ class PermissionChecker
 
         $userId = $user->getAuthIdentifier();
         $id = (is_int($userId) || is_string($userId)) ? $userId : '0';
-        $roleIds = $this->repository->getUserRoleIds($id, get_class($user));
+        $roleIds = $this->repository->getUserRoleIds($id, $user::class);
 
         /** @var array<int, int> $roleIdsArray */
         $roleIdsArray = $roleIds->toArray();

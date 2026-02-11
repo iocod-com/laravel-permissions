@@ -2,8 +2,8 @@
 
 namespace Iocod\LaravelPermissions\Facades;
 
-use Iocod\LaravelPermissions\PermissionChecker;
 use Illuminate\Support\Facades\Facade;
+use Iocod\LaravelPermissions\PermissionChecker;
 
 /**
  * @method static bool hasPermission(\Illuminate\Contracts\Auth\Authenticatable $user, string $permission)

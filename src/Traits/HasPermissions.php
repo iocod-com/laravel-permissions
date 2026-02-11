@@ -2,8 +2,8 @@
 
 namespace Iocod\LaravelPermissions\Traits;
 
-use Iocod\LaravelPermissions\PermissionChecker;
 use Illuminate\Support\Collection;
+use Iocod\LaravelPermissions\PermissionChecker;
 
 /**
  * @mixin \Illuminate\Foundation\Auth\User

@@ -2,9 +2,9 @@
 
 namespace Iocod\LaravelPermissions;
 
-use Iocod\LaravelPermissions\Repositories\PermissionRepository;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Iocod\LaravelPermissions\Repositories\PermissionRepository;
 
 class PermissionServiceProvider extends ServiceProvider
 {
@@ -41,7 +41,7 @@ class PermissionServiceProvider extends ServiceProvider
             Listeners\ClearPermissionCache::class
         );
 
-        Gate::before(function ($user, $ability): ?true {
+        Gate::before(function ($user, $ability): ?bool {
             if (! $user instanceof \Illuminate\Contracts\Auth\Authenticatable) {
                 return null;
             }
