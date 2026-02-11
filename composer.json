@@ -22,10 +22,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Icod\\LaravelPermissions\\PermissionServiceProvider"
+                "Iocod\\LaravelPermissions\\PermissionServiceProvider"
             ],
             "aliases": {
-                "Permission": "Icod\\LaravelPermissions\\Facades\\Permission"
+                "Permission": "Iocod\\LaravelPermissions\\Facades\\Permission"
             }
         }
     }
