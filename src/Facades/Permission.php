@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Iocod\LaravelPermissions\Facades;
 
 use Illuminate\Support\Facades\Facade;
