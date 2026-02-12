@@ -5,7 +5,9 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "Iocod Team"
+            "name": "Iocod Team",
+            "email": "rashidp@iocod.com",
+            "role": "Developer"
         }
     ],
     "require": {
