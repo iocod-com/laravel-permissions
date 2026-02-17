@@ -13,6 +13,20 @@ use Iocod\LaravelPermissions\PermissionChecker;
 trait HasPermissions
 {
     /**
+     * A user may have multiple roles.
+     */
+    public function roles(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->morphToMany(
+            config('permissions.models.role'),
+            'model',
+            config('permissions.table_names.model_has_roles', 'model_has_roles'),
+            config('permissions.column_names.model_morph_key') ?: 'model_id',
+            config('permissions.column_names.role_pivot_key') ?: 'role_id'
+        );
+    }
+
+    /**
      * Check if the user has a specific permission.
      */
     public function hasPermissionTo(string $permission): bool

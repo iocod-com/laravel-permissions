@@ -5,25 +5,23 @@ declare(strict_types=1);
 namespace Iocod\LaravelPermissions\Repositories;
 
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class PermissionRepository
 {
-    protected string $connection;
-
-    /** @var array<string, string> */
-    protected array $tables;
-
-    public function __construct()
+    /**
+     * Get the role model class.
+     */
+    protected function getRoleClass(): string
     {
-        $connection = config('permissions.connection', 'mysql');
-        $this->connection = is_string($connection) ? $connection : 'mysql';
+        return config('permissions.models.role');
+    }
 
-        /** @var mixed $tablesValue */
-        $tablesValue = config('permissions.tables', []);
-        /** @var array<string, string> $tablesList */
-        $tablesList = is_array($tablesValue) ? $tablesValue : [];
-        $this->tables = $tablesList;
+    /**
+     * Get the permission model class.
+     */
+    protected function getPermissionClass(): string
+    {
+        return config('permissions.models.permission');
     }
 
     /**
@@ -33,12 +31,16 @@ class PermissionRepository
      */
     public function getUserRoleIds(int|string $userId, string $userType = 'App\\Models\\User'): Collection
     {
-        return DB::connection($this->connection)
-            ->table($this->tables['model_has_roles'])
-            ->where('model_id', $userId)
-            ->where('model_type', $userType)
-            ->pluck('role_id')
-            ->map(fn ($id): int => is_scalar($id) ? (int) $id : 0);
+        $roleClass = $this->getRoleClass();
+        $roleTable = (new $roleClass)->getTable();
+        $pivotTable = config('permissions.table_names.model_has_roles');
+        $modelKey = config('permissions.column_names.model_morph_key') ?: 'model_id';
+        $roleKey = config('permissions.column_names.role_pivot_key') ?: 'role_id';
+
+        return $roleClass::join($pivotTable, "{$roleTable}.id", '=', "{$pivotTable}.{$roleKey}")
+            ->where("{$pivotTable}.{$modelKey}", $userId)
+            ->where("{$pivotTable}.model_type", $userType)
+            ->pluck("{$roleTable}.id");
     }
 
     /**
@@ -53,27 +55,38 @@ class PermissionRepository
             return collect();
         }
 
-        return DB::connection($this->connection)
-            ->table($this->tables['permissions'].' as p')
-            ->join($this->tables['role_has_permissions'].' as rhp', 'p.id', '=', 'rhp.permission_id')
-            ->whereIn('rhp.role_id', $roleIds)
+        $permissionClass = $this->getPermissionClass();
+        $permissionTable = (new $permissionClass)->getTable();
+        $pivotTable = config('permissions.table_names.role_has_permissions');
+        $permissionKey = config('permissions.column_names.permission_pivot_key') ?: 'permission_id';
+        $roleKey = config('permissions.column_names.role_pivot_key') ?: 'role_id';
+
+        return $permissionClass::join($pivotTable, "{$permissionTable}.id", '=', "{$pivotTable}.{$permissionKey}")
+            ->whereIn("{$pivotTable}.{$roleKey}", $roleIds)
             ->distinct()
-            ->pluck('p.name')
-            ->map(fn ($name): string => is_scalar($name) ? (string) $name : '');
+            ->pluck("{$permissionTable}.name");
     }
 
     /**
      * Check if user has a specific permission.
      */
-    public function userHasPermission(int $userId, string $permission, string $userType = 'App\\Models\\User'): bool
+    public function userHasPermission(int|string $userId, string $permission, string $userType = 'App\\Models\\User'): bool
     {
-        return DB::connection($this->connection)
-            ->table($this->tables['permissions'].' as p')
-            ->join($this->tables['role_has_permissions'].' as rhp', 'p.id', '=', 'rhp.permission_id')
-            ->join($this->tables['model_has_roles'].' as mhr', 'rhp.role_id', '=', 'mhr.role_id')
-            ->where('mhr.model_id', $userId)
-            ->where('mhr.model_type', $userType)
-            ->where('p.name', $permission)
+        $permissionClass = $this->getPermissionClass();
+        $permissionTable = (new $permissionClass)->getTable();
+
+        $rolePermissionTable = config('permissions.table_names.role_has_permissions');
+        $modelRoleTable = config('permissions.table_names.model_has_roles');
+
+        $permissionKey = config('permissions.column_names.permission_pivot_key') ?: 'permission_id';
+        $roleKey = config('permissions.column_names.role_pivot_key') ?: 'role_id';
+        $modelKey = config('permissions.column_names.model_morph_key') ?: 'model_id';
+
+        return $permissionClass::where("{$permissionTable}.name", $permission)
+            ->join($rolePermissionTable, "{$permissionTable}.id", "=", "{$rolePermissionTable}.{$permissionKey}")
+            ->join($modelRoleTable, "{$rolePermissionTable}.{$roleKey}", "=", "{$modelRoleTable}.{$roleKey}")
+            ->where("{$modelRoleTable}.{$modelKey}", $userId)
+            ->where("{$modelRoleTable}.model_type", $userType)
             ->exists();
     }
 
@@ -84,12 +97,15 @@ class PermissionRepository
      */
     public function getUserRoleNames(int|string $userId, string $userType = 'App\\Models\\User'): Collection
     {
-        return DB::connection($this->connection)
-            ->table($this->tables['roles'].' as r')
-            ->join($this->tables['model_has_roles'].' as mhr', 'r.id', '=', 'mhr.role_id')
-            ->where('mhr.model_id', $userId)
-            ->where('mhr.model_type', $userType)
-            ->pluck('r.name')
-            ->map(fn ($name): string => is_scalar($name) ? (string) $name : '');
+        $roleClass = $this->getRoleClass();
+        $roleTable = (new $roleClass)->getTable();
+        $pivotTable = config('permissions.table_names.model_has_roles');
+        $modelKey = config('permissions.column_names.model_morph_key') ?: 'model_id';
+        $roleKey = config('permissions.column_names.role_pivot_key') ?: 'role_id';
+
+        return $roleClass::join($pivotTable, "{$roleTable}.id", '=', "{$pivotTable}.{$roleKey}")
+            ->where("{$pivotTable}.{$modelKey}", $userId)
+            ->where("{$pivotTable}.model_type", $userType)
+            ->pluck("{$roleTable}.name");
     }
 }
